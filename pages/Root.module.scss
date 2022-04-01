@@ -1,0 +1,9 @@
+@import "global";
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: $navbar-height;
+  width: 100%;
+}
