@@ -1,6 +1,6 @@
-import dynamic from "next/dynamic";
-import { useCallback, useState, Fragment, useEffect } from "react";
-import styled from "styled-components";
+import NextImage from "next/image";
+import { useState } from "react";
+
 import {
   useEditor,
   EditorContent,
@@ -45,6 +45,7 @@ import TaskItem from "@tiptap/extension-task-item";
 import Blockquote from "@tiptap/extension-blockquote";
 
 // TEXT STYLING
+import TextStyle from "@tiptap/extension-text-style";
 import Bold from "@tiptap/extension-bold";
 import Italic from "@tiptap/extension-italic";
 import Highlight from "@tiptap/extension-highlight";
@@ -56,34 +57,42 @@ import { Color } from "@tiptap/extension-color";
 // SCRIPT NODE
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
-import DropdownEditor from "@/components/DropdownEditor";
-import BoldEditor from "@/components/BoldEditor";
-import ItalicEditor from "@/components/ItalicEditor";
-import UnderlineEditor from "@/components/UnderlineEditor";
-import StrikeEditor from "@/components/StrikeEditor";
-import HighlightEditor from "@/components/HightlightEditor";
-import ColorEditor from "@/components/ColorEditor";
-import AlignLeftEditor from "@/components/AlignLeftEditor";
-import AlignCenterEditor from "@/components/AlignCenterEditor";
-import AlignRightEditor from "@/components/AlignRightEditor";
-import QuoteEditor from "@/components/QuoteEditor";
-import LinkEditor from "@/components/LinkEditor";
-import ImageEditor from "@/components/ImageEditor";
-import TableEditor from "@/components/TableEditor";
-import CodeBlockEditor from "@/components/CodeBlockEditor";
-import CodeEditor from "@/components/CodeEditor";
-import BulletListEditor from "@/components/BulletListEditor";
-import OrderedListEditor from "@/components/OrderedListEditor";
-import SubscriptEditor from "@/components/SubscriptEditor";
-import SuperscriptEditor from "@/components/SuperscriptEditor";
-import UndoEditor from "@/components/UndoEditor";
-import RedoEditor from "@/components/RedoEditor";
+
+// ICONS
+import { Bold as BoldIcon } from "@styled-icons/boxicons-regular";
+import { Italic as ItalicIcon } from "@styled-icons/boxicons-regular";
+import { Underline as UnderlineIcon } from "@styled-icons/boxicons-regular";
+import { Strikethrough as StrikethroughIcon } from "styled-icons/boxicons-regular";
+import { Highlight as HighlightIcon } from "styled-icons/boxicons-regular";
+import { AlignLeft as AlignLeftIcon } from "styled-icons/boxicons-regular";
+import { AlignMiddle as AlignMiddleIcon } from "styled-icons/boxicons-regular";
+import { AlignRight as AlignRightIcon } from "styled-icons/boxicons-regular";
+import { QuoteLeft as QuoteLeftIcon } from "styled-icons/boxicons-solid";
+import { LinkAlt as LinkAltIcon } from "styled-icons/boxicons-regular";
+import { ImageAdd as ImageAddIcon } from "styled-icons/boxicons-regular";
+import { Table as TableIcon } from "styled-icons/boxicons-regular";
+import { CodeBlock as CodeBlockIcon } from "styled-icons/boxicons-regular";
+import { Code as CodeIcon } from "styled-icons/boxicons-regular";
+import { FormatListBulleted as UListIcon } from "styled-icons/material";
+import { FormatListNumbered as OListIcon } from "styled-icons/material";
+import { Subscript as SubIcon } from "styled-icons/foundation";
+import { Superscript as SupIcon } from "styled-icons/foundation";
+import { Undo as UndoIcon } from "styled-icons/boxicons-regular";
+import { Redo as RedoIcon } from "styled-icons/boxicons-regular";
+
+// HIGHLIGHT
+import { lowlight } from "lowlight";
+
 import styles from "./Editor.module.scss";
 
-const lowlight = dynamic(() => import("lowlight"), {
-  ssr: false,
-});
 const Editor = (props) => {
+  const [linkModalIsOpen, setLinkModalIsOpen] = useState(false);
+  const [imageModalIsOpen, setImageModalIsOpen] = useState(false);
+  const [imagesToUpload, setImagesToUpload] = useState([]);
+  const [currentSelectedImage, setCurrentSelectedImage] = useState({
+    src: "",
+    file: "",
+  });
   const [selectedHeading, setSelectedHeading] = useState("H1");
 
   const editor = useEditor({
@@ -92,27 +101,52 @@ const Editor = (props) => {
       Document,
       Paragraph,
       Text,
-      Blockquote,
-      OrderedList,
-      BulletList,
+      Blockquote.configure({
+        HTMLAttributes: {
+          class: styles.blockquote,
+        },
+      }),
+      OrderedList.configure({
+        HTMLAttributes: {
+          class: styles.olist,
+        },
+      }),
+      BulletList.configure({
+        HTMLAttributes: {
+          class: styles.ulist,
+        },
+      }),
       ListItem,
       TaskList,
       TaskItem,
       Bold.configure({
         HTMLAttributes: {
-          class: "bold",
+          class: styles.sfBold,
         },
       }),
       Italic,
       Color,
       Strike,
-      Code,
+      Code.configure({
+        HTMLAttributes: {
+          class: styles.code,
+        },
+      }),
       CharacterCount.configure(),
       CodeBlockLowlight.configure({
-        defaultLanguage: "plaintext",
+        HTMLAttributes: {
+          class: "hljs",
+        },
         lowlight,
+        languageClassPrefix: "language-",
+        defaultLanguage: "javascript",
       }),
-      Image,
+      Image.configure({
+        HTMLAttributes: {
+          class: styles.image,
+        },
+        inline: true,
+      }),
       Dropcursor,
       Heading.configure({
         levels: [1, 2, 3, 4, 5],
@@ -124,55 +158,60 @@ const Editor = (props) => {
       Superscript,
       Underline,
       Link.configure({
+        HTMLAttributes: {
+          class: styles.link,
+        },
         openOnClick: true,
         linkOnPaste: true,
         openOnClick: true,
       }),
       Placeholder.configure({
-        // Use a placeholder:
-        placeholder: "Write something …",
-        // Use different placeholders depending on the node type:
-        // placeholder: ({ node }) => {
-        //   if (node.type.name === 'heading') {
-        //     return 'What’s the title?'
-        //   }
+        emptyNodeClass: styles.placeholder,
+        showOnlyWhenEditable: false,
 
-        //   return 'Can you add some further context?'
-        // },
+        placeholder: ({ node }) => {
+          if (node.type.name === "heading") {
+            return "Гарчиг";
+          }
+
+          if (node.type.name === "codeBlock") {
+            return "console.log('Hello world');";
+          }
+
+          return "Агуулга";
+        },
       }),
       Table.configure({
+        HTMLAttributes: {
+          class: styles.table,
+        },
         resizable: true,
       }),
       TableRow,
       TableHeader,
       TableCell,
+      TextStyle,
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
     ],
-    content: `
-    <h1>Hello World</h1>
-    <h2>Hello World</h2>
-    <h3>Hello World</h1>
-    `,
+    editorProps: {
+      attributes: {
+        spellcheck: "false",
+      },
+    },
+    content: ``,
   });
 
-  const addImage = useCallback(() => {
-    const url = window.prompt("URL");
+  if (!editor) {
+    return null;
+  }
 
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  }, [editor]);
+  const handleLink = (e) => {
+    e.preventDefault();
+    setLinkModalIsOpen(false);
 
-  const setLink = useCallback(() => {
-    const previousUrl = editor.getAttributes("link").href;
-    const url = window.prompt("URL", previousUrl);
-
-    // cancelled
-    if (url === null) {
-      return;
-    }
+    const url = e.target.querySelector("input").value;
 
     // empty
     if (url === "") {
@@ -183,94 +222,423 @@ const Editor = (props) => {
 
     // update link
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-  }, [editor]);
+  };
 
-  if (!editor) {
-    return null;
-  }
+  const handleImage = (e) => {
+    e.preventDefault();
+
+    if (currentSelectedImage.src) {
+      editor.chain().focus().setImage({ src: currentSelectedImage.src }).run();
+      setImagesToUpload([...imagesToUpload, currentSelectedImage.file]);
+    }
+
+    console.log([...imagesToUpload, currentSelectedImage.file]);
+  };
 
   const handleHeading = (e) => {
-    if (!e.target.tagName.startsWith("H")) return;
+    if (!e.target.tagName.startsWith("H")) {
+      setSelectedHeading("");
+      return;
+    }
+
     setSelectedHeading(e.target.tagName);
   };
 
-  const fixedMenu = [
-    <DropdownEditor editor={editor} value={selectedHeading} onChange={setSelectedHeading}/>,
-    <BoldEditor editor={editor} />,
-    <ItalicEditor editor={editor} />,
-    <UnderlineEditor editor={editor} />,
-    <StrikeEditor editor={editor} />,
-    <HighlightEditor editor={editor} />,
-    <ColorEditor editor={editor} />,
-    <AlignLeftEditor editor={editor} />,
-    <AlignCenterEditor editor={editor} />,
-    <AlignRightEditor editor={editor} />,
-    <QuoteEditor editor={editor} />,
-    <LinkEditor editor={editor} setLink={setLink} />,
-    <ImageEditor editor={editor} addImage={addImage} />,
-    <TableEditor editor={editor} />,
-    <CodeBlockEditor editor={editor} />,
-    <CodeEditor editor={editor} />,
-    <BulletListEditor editor={editor} />,
-    <OrderedListEditor editor={editor} />,
-    <SubscriptEditor editor={editor} />,
-    <SuperscriptEditor editor={editor} />,
-    <UndoEditor editor={editor} />,
-    <RedoEditor editor={editor} />,
-  ];
-  const bubbleMenu = [
-    <BoldEditor editor={editor} />,
-    <ItalicEditor editor={editor} />,
-    <UnderlineEditor editor={editor} />,
-    <StrikeEditor editor={editor} />,
-    <HighlightEditor editor={editor} />,
-    <AlignLeftEditor editor={editor} />,
-    <AlignCenterEditor editor={editor} />,
-    <AlignRightEditor editor={editor} />,
-    <SubscriptEditor editor={editor} />,
-    <SuperscriptEditor editor={editor} />,
-    <UndoEditor editor={editor} />,
-    <RedoEditor editor={editor} />,
-  ];
-  const floatingMenu = [
-    <DropdownEditor editor={editor} value={selectedHeading} onChange={setSelectedHeading} />,
-    <QuoteEditor editor={editor} />,
-    <LinkEditor editor={editor} setLink={setLink} />,
-    <ImageEditor editor={editor} addImage={addImage} />,
-    <TableEditor editor={editor} />,
-    <CodeBlockEditor editor={editor} />,
-    <CodeEditor editor={editor} />,
-    <BulletListEditor editor={editor} />,
-    <OrderedListEditor editor={editor} />,
-  ];
+  const handleHeadingChange = (e) => {
+    setSelectedHeading(e.target.value);
+
+    if (e.target.value === "") {
+      editor.chain().focus().setParagraph().run();
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .setHeading({
+        level: +e.target.value.replace("H", ""),
+      })
+      .run();
+  };
 
   return (
-    <>
-      {/* FIXED MENU */}
-      {editor && (
-        <div className={styles.fixedMenu}>
-          {fixedMenu.map((item, index) => {
-            return (
-              <div key={index} className={styles.fixedMenuItem}>
-                {item}
-              </div>
-            );
-          })}
+    <div className={styles.container}>
+      {/* HREF MODAL */}
+      {linkModalIsOpen && (
+        <div className={styles.linkModal}>
+          <div
+            className={styles.backDrop}
+            onClick={() => {
+              setLinkModalIsOpen(false);
+            }}
+          ></div>
+          <form className={styles.linkModal__content} onSubmit={handleLink}>
+            <label htmlFor="setLink" className={styles.linkModal__label}>
+              URL
+            </label>
+            <input
+              name="setLink"
+              id="setLink"
+              type="url"
+              placeholder="https://"
+              defaultValue={editor.getAttributes("link").href}
+              className={styles.linkModal__input}
+            />
+            <div className={styles.linkModal__buttons}>
+              <button
+                type="button"
+                onClick={() => {
+                  setLinkModalIsOpen(false);
+                }}
+              >
+                Буцах
+              </button>
+              <button type="submit">Өөрчлөх</button>
+            </div>
+          </form>
         </div>
       )}
+      {imageModalIsOpen && (
+        <div className={styles.imageModal}>
+          <div
+            className={styles.backDrop}
+            onClick={() => {
+              setImageModalIsOpen(false);
+            }}
+          ></div>
+          <form className={styles.imageModal__content} onSubmit={handleImage}>
+            <label htmlFor="setImage" className={styles.imageModal__label}>
+              URL
+            </label>
+            <input
+              name="setImage"
+              id="setImage"
+              type="file"
+              accept="image/png, image/jpeg"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                const url = URL.createObjectURL(file);
+                console.log(file);
+                setCurrentSelectedImage({
+                  file: file,
+                  src: url,
+                });
+              }}
+              className={styles.imageModal__input}
+            />
+
+            {currentSelectedImage.src && (
+              <div className={styles.imageModal__previewContainer}>
+                <NextImage
+                  src={currentSelectedImage.src}
+                  alt={currentSelectedImage.file.name}
+                  layout="fill"
+                  objectFit="cover"
+                />
+              </div>
+            )}
+            <div className={styles.imageModal__buttons}>
+              <button
+                type="button"
+                onClick={() => {
+                  setImageModalIsOpen(false);
+                }}
+              >
+                Буцах
+              </button>
+              <button type="submit">Нэмэх</button>
+            </div>
+          </form>
+        </div>
+      )}
+      {/* MAIN MENU */}
+      {editor && (
+        <div className={styles.menu}>
+          <select
+            className={styles.headingSelect}
+            value={selectedHeading}
+            onChange={handleHeadingChange}
+          >
+            <option value="">Гарчиг сонгох</option>
+            <option value="H1">Heading 1</option>
+            <option value="H2">Heading 2</option>
+            <option value="H3">Heading 3</option>
+            <option value="H4">Heading 4</option>
+            <option value="H5">Heading 5</option>
+          </select>
+
+          <button
+            className={
+              editor.isActive("bold")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleBold().run();
+            }}
+          >
+            <BoldIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("italic")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleItalic().run();
+            }}
+          >
+            <ItalicIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("underline")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleUnderline().run();
+            }}
+          >
+            <UnderlineIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("strike")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleStrike().run();
+            }}
+          >
+            <StrikethroughIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("highlight")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleHighlight().run();
+            }}
+          >
+            <HighlightIcon />
+          </button>
+
+          <input
+            className={styles.colorPicker}
+            type="color"
+            onInput={(event) =>
+              editor.chain().focus().setColor(event.target.value).run()
+            }
+            value={editor.getAttributes("textStyle").color || "#000000"}
+          />
+
+          <button
+            className={
+              editor.isActive({ textAlign: "left" })
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().setTextAlign("left").run();
+            }}
+          >
+            <AlignLeftIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive({ textAlign: "center" })
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().setTextAlign("center").run();
+            }}
+          >
+            <AlignMiddleIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive({ textAlign: "right" })
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().setTextAlign("right").run();
+            }}
+          >
+            <AlignRightIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("blockquote")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleBlockquote().run();
+            }}
+          >
+            <QuoteLeftIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("link")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              if (editor.isActive("link")) {
+                editor.chain().focus().unsetLink().run();
+              } else {
+                setLinkModalIsOpen(true);
+              }
+            }}
+          >
+            <LinkAltIcon />
+          </button>
+
+          <button
+            className={styles.menu__item}
+            onClick={() => {
+              setImageModalIsOpen(true);
+            }}
+          >
+            <ImageAddIcon />
+          </button>
+
+          <button className={styles.menu__item} onClick={() => {}}>
+            <TableIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("codeBlock")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleCodeBlock().run();
+            }}
+          >
+            <CodeBlockIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("code")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleCode().run();
+            }}
+          >
+            <CodeIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("bulletList")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleBulletList().run();
+            }}
+          >
+            <UListIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("orderedList")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleOrderedList().run();
+            }}
+          >
+            <OListIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("subscript")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleSubscript().run();
+            }}
+          >
+            <SubIcon />
+          </button>
+
+          <button
+            className={
+              editor.isActive("superscript")
+                ? `${styles.menu__item__active} ${styles.menu__item}`
+                : styles.menu__item
+            }
+            onClick={() => {
+              editor.chain().focus().toggleSuperscript().run();
+            }}
+          >
+            <SupIcon />
+          </button>
+
+          <button
+            className={styles.menu__item}
+            onClick={() => {
+              editor.chain().focus().undo().run();
+            }}
+          >
+            <UndoIcon />
+          </button>
+
+          <button
+            className={styles.menu__item}
+            onClick={() => {
+              editor.chain().focus().redo().run();
+            }}
+          >
+            <RedoIcon />
+          </button>
+        </div>
+      )}
+      {/* BUBBLE MENU */}
       {editor && (
         <BubbleMenu
           className={styles.bubbleMenu}
           editor={editor}
           tippyOptions={{ duration: 100, maxWidth: "max-content" }}
         >
-          {bubbleMenu.map((item, index) => {
-            return (
-              <div key={index} className={styles.bubbleMenuItem}>
-                {item}
-              </div>
-            );
-          })}
+          {/* <BoldEditor editor={editor} />
+          <ItalicEditor editor={editor} />
+          <UnderlineEditor editor={editor} />
+          <StrikeEditor editor={editor} />
+          <HighlightEditor editor={editor} />
+          <AlignLeftEditor editor={editor} />
+          <AlignCenterEditor editor={editor} />
+          <AlignRightEditor editor={editor} />
+          <SubscriptEditor editor={editor} />
+          <SuperscriptEditor editor={editor} />
+          <UndoEditor editor={editor} />
+          <RedoEditor editor={editor} /> */}
         </BubbleMenu>
       )}
       {/* FLOATING MENU */}
@@ -280,23 +648,28 @@ const Editor = (props) => {
           editor={editor}
           tippyOptions={{ duration: 100, maxWidth: "max-content" }}
         >
-          {floatingMenu.map((item, index) => {
-            return (
-              <div key={index} className={styles.floatingMenuItem}>
-                {item}
-              </div>
-            );
-          })}
+          {/* <DropdownEditor
+            editor={editor}
+            value={selectedHeading}
+            onChange={setSelectedHeading}
+          />
+          <QuoteEditor editor={editor} />
+          <LinkEditor editor={editor} setLink={setLink} />
+          <ImageEditor editor={editor} addImage={addImage} />
+          <TableEditor editor={editor} />
+          <CodeBlockEditor editor={editor} />
+          <CodeEditor editor={editor} />
+          <BulletListEditor editor={editor} />
+          <OrderedListEditor editor={editor} /> */}
         </FloatingMenu>
       )}
-      <button onClick={addImage}>setImage</button>
       <EditorContent
         editor={editor}
         onClick={handleHeading}
         className={styles.textArea}
       />
       {editor.storage.characterCount.words()} words
-    </>
+    </div>
   );
 };
 

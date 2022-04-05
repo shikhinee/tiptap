@@ -13,6 +13,7 @@ h1,
 h2,
 h3,
 h4,
+h5,
 li,
 p,
 code {
@@ -25,7 +26,6 @@ code {
   font-size: 4em;
   font-weight: 700;
   letter-spacing: -0.04em;
-  text-transform: capitalize;
 
   @include baseThemify() {
     color: has(clr-h1);
@@ -40,7 +40,6 @@ code {
   font-size: 2.56em;
   letter-spacing: -0.016em;
   font-weight: 700;
-  text-transform: capitalize;
 
   @include baseThemify() {
     color: has(clr-h2);
@@ -51,7 +50,6 @@ code {
   font-size: 1.6em;
   font-weight: 600;
   letter-spacing: -0.008em;
-  text-transform: capitalize;
 
   @include baseThemify() {
     color: has(clr-h3);
@@ -62,7 +60,16 @@ code {
   font-size: 1.2em;
   font-weight: 700;
   letter-spacing: -0.032em;
-  text-transform: capitalize;
+
+  @include baseThemify() {
+    color: has(clr-h4);
+  }
+}
+
+:where(h5) {
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: -0.032em;
 
   @include baseThemify() {
     color: has(clr-h4);
